@@ -5,7 +5,8 @@ import websocket
 import json
 import threading
 
-quoteasset = ['BTC','ETH','USDT','USDC','DAI','BNB','TUSD','BUSD']
+quoteasset = ['BUSD','BTC','ETH','USDT','TUSD','DAI','USDC','BNB']
+#'BUSD','BTC','ETH','USDT','TUSD','DAI','USDC','BNB'
 class ExchangeApi:
     """
     Base exchange API class
@@ -63,27 +64,26 @@ class BinanceApi(ExchangeApi):
     def __init__(self,api_key,secret_key):
         super().__init__(api_key,secret_key)
         self.url = 'wss://stream.binance.com:443/stream'
-        self.subscriptions = ['btcusdt','ethusdt']
+        # self.subscriptions = ['ethbtc','ltcbtc']
+        self.subscriptions = {}
+        self.get_market_symbols()
         self.connect_wss(self.url)
 
     def on_open(self,ws):
         # When initialize Websocket connection
-        i = 1
+        params = []
+        print(len(self.subscriptions))
         for symbol in self.subscriptions:
-
-            subscribe_message = {
-                "method": "SUBSCRIBE",
-                "params":
-                    [
-
-                        f"{symbol.lower()}@depth5"
-                    ],
-                "id": i
-            }
-            i += 1
-            ws.send(json.dumps(subscribe_message))
+            params.append(f"{symbol.lower()}@depth5@100ms")
+        subscribe_message = {
+            "method": "SUBSCRIBE",
+            "params": params,
+            "id": 1
+        }
+        print(subscribe_message)
+        ws.send(json.dumps(subscribe_message))
     def on_message(self,ws,message):
-        # print(message)
+        print(message)
         data = json.loads(message)
         if 'data' in data:
             with self.lock:
@@ -93,9 +93,12 @@ class BinanceApi(ExchangeApi):
         data = self.public_request(method='GET',url='https://api.binance.com/api/v3/exchangeInfo',
                             params={'permissions': 'SPOT'})
         valid_symbols = [x for x in data['symbols'] if x['status'] == 'TRADING' and x['quoteAsset'] in quoteasset]
-        print(len(valid_symbols))
-        # print(valid_symbols)
-            # print(self.orderbook)
+        # print(len(valid_symbols))
+        # symbols_info = {}
+        for symbol in valid_symbols:
+            self.subscriptions[symbol['symbol']] = {'baseAsset':symbol['baseAsset'],'quoteAsset':symbol['quoteAsset']}
+            if len(self.subscriptions) == 300:
+                break
 
 
 
@@ -144,15 +147,28 @@ class KucoinApi(ExchangeApi):
                 with self.lock:
                     self.orderbook[data['topic'].split(':')[1]] = {"bids": data['data']['bids'], "asks": data['data']['asks']}
 
+
+    def get_market_symbols(self):
+        data = self.public_request(method='GET', url='https://api.kucoin.com/api/v2/symbols')
+        all_symbols = data['data']
+        # print(len(valid_symbols))
+        # symbols_info = {}
+        for symbol in all_symbols:
+            self.subscriptions[symbol['symbol']] = {'baseAsset': symbol['baseCurrency'],
+                                                    'quoteAsset': symbol['quoteCurrency']}
+            if len(self.subscriptions) == 300:
+                break
+        print(self.subscriptions)
+
 if __name__ == "__main__":
-    binance_test = BinanceApi(api_key='asdasd',secret_key='asd')
+    # binance_test = BinanceApi(api_key='asdasd',secret_key='asd')
     # while True:
-    #     binance = test.get_orderbook()
-    #     time.sleep(0.3)
+    #     binance = binance_test.get_orderbook()
+    #     time.sleep(0.5)
     #     print(binance)
     #
-    # kucoin_test = KucoinApi('asd','asd')
-    binance_test.get_market_symbols()
+    kucoin_test = KucoinApi('asd','asd')
+    kucoin_test.get_market_symbols()
     # while True:
     #     print('Binance')
     #     print(binance_test.get_orderbook())
