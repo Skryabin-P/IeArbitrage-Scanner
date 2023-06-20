@@ -83,7 +83,7 @@ class BinanceApi(ExchangeApi):
         print(subscribe_message)
         ws.send(json.dumps(subscribe_message))
     def on_message(self,ws,message):
-        print(message)
+        # print(message)
         data = json.loads(message)
         if 'data' in data:
             with self.lock:
@@ -104,14 +104,20 @@ class BinanceApi(ExchangeApi):
 
 
 class KucoinApi(ExchangeApi):
+    """
+        Kucoin class for retrieving private market data
+        Inherited from base ExchangeAPI class
+        """
     def __init__(self,api_key,secret_key):
         super().__init__(api_key,secret_key)
         self.url = ''
-        self.subscriptions = ['BTC-USDT','ETH-USDT']
+        self.subscriptions = {}
+        # self.subscriptions = ['ETH-USDT','ETH-BTC']
         self.orderbook = {}
         self.token = ''
         self.get_public_token()
         self.connectId = 123
+        self.get_market_symbols()
         self.connect_wss(f'{self.url}?token={self.token}&[connectId={self.connectId}]')
     def get_public_token(self):
         """
@@ -132,7 +138,7 @@ class KucoinApi(ExchangeApi):
             topic+=str(symbol)+','
         topic = topic[:len(topic)-1]
         subscribe_message = {
-            "id": 1545910660739,                          #The id should be an unique value
+            "id": 1545910660735,                          #The id should be an unique value
             "type": "subscribe",
             "topic": topic,  #Topic needs to be subscribed. Some topics support to divisional subscribe the informations of multiple trading pairs through ",".
             "privateChannel": False,                      #Adopted the private channel or not. Set as false by default.
@@ -156,9 +162,9 @@ class KucoinApi(ExchangeApi):
         for symbol in all_symbols:
             self.subscriptions[symbol['symbol']] = {'baseAsset': symbol['baseCurrency'],
                                                     'quoteAsset': symbol['quoteCurrency']}
-            if len(self.subscriptions) == 300:
+            if len(self.subscriptions) == 100:
                 break
-        print(self.subscriptions)
+        # print(self.subscriptions)
 
 if __name__ == "__main__":
     # binance_test = BinanceApi(api_key='asdasd',secret_key='asd')
@@ -168,12 +174,12 @@ if __name__ == "__main__":
     #     print(binance)
     #
     kucoin_test = KucoinApi('asd','asd')
-    kucoin_test.get_market_symbols()
-    # while True:
-    #     print('Binance')
-    #     print(binance_test.get_orderbook())
-    #     print('----------------------------')
-    #     print('Kucoin')
-    #     print(kucoin_test.get_orderbook())
-    #     print('----------------------------')
-    #     time.sleep(0.5)
+    # kucoin_test.get_market_symbols()
+    while True:
+        # print('Binance')
+        # print(binance_test.get_orderbook())
+        print('----------------------------')
+        print('Kucoin')
+        print(kucoin_test.get_orderbook())
+        print('----------------------------')
+        time.sleep(0.5)
