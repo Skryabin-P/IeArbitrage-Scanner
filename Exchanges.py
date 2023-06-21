@@ -97,7 +97,7 @@ class BinanceApi(ExchangeApi):
         # symbols_info = {}
         for symbol in valid_symbols:
             self.subscriptions[symbol['symbol']] = {'baseAsset':symbol['baseAsset'],'quoteAsset':symbol['quoteAsset']}
-            if len(self.subscriptions) == 300:
+            if len(self.subscriptions) == 100:
                 break
 
 
@@ -160,7 +160,8 @@ class KucoinApi(ExchangeApi):
         # print(len(valid_symbols))
         # symbols_info = {}
         for symbol in all_symbols:
-            self.subscriptions[symbol['symbol']] = {'baseAsset': symbol['baseCurrency'],
+            if symbol['quoteCurrency'] in quoteasset and symbol['enableTrading']==True:
+                self.subscriptions[symbol['symbol']] = {'baseAsset': symbol['baseCurrency'],
                                                     'quoteAsset': symbol['quoteCurrency']}
             if len(self.subscriptions) == 100:
                 break
