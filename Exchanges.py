@@ -4,9 +4,12 @@ import requests
 import websocket
 import json
 import threading
-
+from func import normalize_pair
 quoteasset = ['BUSD','BTC','ETH','USDT','TUSD','DAI','USDC','BNB']
 #'BUSD','BTC','ETH','USDT','TUSD','DAI','USDC','BNB'
+
+# btc_usdt - unified representation of crypto pairs
+
 class ExchangeApi:
     """
     Base exchange API class
@@ -15,10 +18,12 @@ class ExchangeApi:
         self.api_key = api_key
         self.secret_key = secret_key
         self.ws = None
+        self.subscriptions = {}
         self.orderbook = {}
         self.ping_interval = 0
         self.ping_timeout = None
         self.lock = threading.Lock()
+
     def public_request(self,method,url,params=None):
         response = requests.request(method=method,url=url,params=params)
         return response.json()
@@ -55,7 +60,10 @@ class ExchangeApi:
     def on_error(self,ws,error):
         # print(f"это я{error} ")
         print(error)
-
+    def find_symbol(self,symbol:str):
+        for key in self.subscriptions:
+            if str(self.subscriptions[key]['symbol']).lower()==symbol.lower():
+                return key
 class BinanceApi(ExchangeApi):
     """
     Binance class for retrieving private market data
@@ -73,8 +81,8 @@ class BinanceApi(ExchangeApi):
         # When initialize Websocket connection
         params = []
         print(len(self.subscriptions))
-        for symbol in self.subscriptions:
-            params.append(f"{symbol.lower()}@depth5@100ms")
+        for symbol,value in self.subscriptions.items():
+            params.append(f"{value['symbol'].lower()}@depth5@100ms")
         subscribe_message = {
             "method": "SUBSCRIBE",
             "params": params,
@@ -87,7 +95,8 @@ class BinanceApi(ExchangeApi):
         data = json.loads(message)
         if 'data' in data:
             with self.lock:
-                self.orderbook[data['stream'].split('@')[0]] = {"bids":data['data']['bids'],"asks":data['data']['asks']}
+                unified_symbol = self.find_symbol(data['stream'].split('@')[0])
+                self.orderbook[unified_symbol] = {"bids":data['data']['bids'],"asks":data['data']['asks']}
 
     def get_market_symbols(self):
         data = self.public_request(method='GET',url='https://api.binance.com/api/v3/exchangeInfo',
@@ -96,8 +105,9 @@ class BinanceApi(ExchangeApi):
         # print(len(valid_symbols))
         # symbols_info = {}
         for symbol in valid_symbols:
-            self.subscriptions[symbol['symbol']] = {'baseAsset':symbol['baseAsset'],'quoteAsset':symbol['quoteAsset']}
-            if len(self.subscriptions) == 100:
+            normalized_name = normalize_pair(symbol['baseAsset'],symbol['quoteAsset'])
+            self.subscriptions[normalized_name] = {'symbol':symbol['symbol'],'baseAsset':symbol['baseAsset'],'quoteAsset':symbol['quoteAsset']}
+            if len(self.subscriptions) == 2:
                 break
 
 
@@ -134,8 +144,8 @@ class KucoinApi(ExchangeApi):
         self.ping_timeout = int(resp['data']['instanceServers'][0]['pingTimeout'])/1000
     def on_open(self,ws):
         topic = f"/spotMarket/level2Depth5:"
-        for symbol in self.subscriptions:
-            topic+=str(symbol)+','
+        for symbol,value in self.subscriptions.items():
+            topic+=str(value['symbol'])+','
         topic = topic[:len(topic)-1]
         subscribe_message = {
             "id": 1545910660735,                          #The id should be an unique value
@@ -151,7 +161,9 @@ class KucoinApi(ExchangeApi):
         if data['type'] =='message':
             if '/spotMarket/level2Depth5' in data['topic']:
                 with self.lock:
-                    self.orderbook[data['topic'].split(':')[1]] = {"bids": data['data']['bids'], "asks": data['data']['asks']}
+                    unified_symbol = self.find_symbol(data['topic'].split(':')[1])
+
+                    self.orderbook[unified_symbol] = {"bids": data['data']['bids'], "asks": data['data']['asks']}
 
 
     def get_market_symbols(self):
@@ -161,14 +173,15 @@ class KucoinApi(ExchangeApi):
         # symbols_info = {}
         for symbol in all_symbols:
             if symbol['quoteCurrency'] in quoteasset and symbol['enableTrading']==True:
-                self.subscriptions[symbol['symbol']] = {'baseAsset': symbol['baseCurrency'],
+                normalized_name = normalize_pair(symbol['baseCurrency'],symbol['quoteCurrency'])
+                self.subscriptions[normalized_name] = {'symbol':symbol['symbol'],'baseAsset': symbol['baseCurrency'],
                                                     'quoteAsset': symbol['quoteCurrency']}
-            if len(self.subscriptions) == 100:
+            if len(self.subscriptions) == 2:
                 break
         # print(self.subscriptions)
 
 if __name__ == "__main__":
-    # binance_test = BinanceApi(api_key='asdasd',secret_key='asd')
+    binance_test = BinanceApi(api_key='asdasd',secret_key='asd')
     # while True:
     #     binance = binance_test.get_orderbook()
     #     time.sleep(0.5)
@@ -176,11 +189,14 @@ if __name__ == "__main__":
     #
     kucoin_test = KucoinApi('asd','asd')
     # kucoin_test.get_market_symbols()
+    # print(kucoin_test.subscriptions)
+    # print(kucoin_test.find_symbol('LOKI-BTC'))
     while True:
-        # print('Binance')
-        # print(binance_test.get_orderbook())
+        print('Binance')
+        print(binance_test.get_orderbook())
         print('----------------------------')
         print('Kucoin')
         print(kucoin_test.get_orderbook())
         print('----------------------------')
+
         time.sleep(0.5)
