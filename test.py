@@ -1,7 +1,5 @@
-import ccxt
-
-BinanceEx = ccxt.binance()
-
-orderbook = BinanceEx.watch_order_book('btcusdt')
-print(123)
-print(orderbook)
+class TestExchange:
+    def __init__(self,name):
+        self.subscriptions = {}
+        self.orderbook = {}
+        self.name = name

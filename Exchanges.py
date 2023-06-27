@@ -71,6 +71,7 @@ class BinanceApi(ExchangeApi):
     """
     def __init__(self,api_key,secret_key):
         super().__init__(api_key,secret_key)
+        self.name = "Binance"
         self.url = 'wss://stream.binance.com:443/stream'
         # self.subscriptions = ['ethbtc','ltcbtc']
         self.subscriptions = {}
@@ -120,6 +121,7 @@ class KucoinApi(ExchangeApi):
         """
     def __init__(self,api_key,secret_key):
         super().__init__(api_key,secret_key)
+        self.name = "Kucoin"
         self.url = ''
         self.subscriptions = {}
         # self.subscriptions = ['ETH-USDT','ETH-BTC']
@@ -193,10 +195,11 @@ if __name__ == "__main__":
     # print(kucoin_test.find_symbol('LOKI-BTC'))
     while True:
         print('Binance')
+        print(binance_test.subscriptions)
         print(binance_test.get_orderbook())
-        print('----------------------------')
-        print('Kucoin')
-        print(kucoin_test.get_orderbook())
-        print('----------------------------')
+        # print('----------------------------')
+        # print('Kucoin')
+        # print(kucoin_test.get_orderbook())
+        # print('----------------------------')
 
-        time.sleep(0.5)
+        time.sleep(2)
