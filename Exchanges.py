@@ -17,8 +17,10 @@ class ExchangeApi:
     def __init__(self,api_key,secret_key=None):
         self.api_key = api_key
         self.secret_key = secret_key
+        self.status = False
         self.ws = None
         self.subscriptions = {}
+        self.name = ''
         self.orderbook = {}
         self.ping_interval = 0
         self.ping_timeout = None
@@ -59,7 +61,7 @@ class ExchangeApi:
         self.ws = None
     def on_error(self,ws,error):
         # print(f"это я{error} ")
-        print(error)
+        print(f"Error from {self.name} is  {error}")
     def find_symbol(self,symbol:str):
         for key in self.subscriptions:
             if str(self.subscriptions[key]['symbol']).lower()==symbol.lower():
@@ -98,6 +100,8 @@ class BinanceApi(ExchangeApi):
             with self.lock:
                 unified_symbol = self.find_symbol(data['stream'].split('@')[0])
                 self.orderbook[unified_symbol] = {"bids":data['data']['bids'],"asks":data['data']['asks']}
+                if len(self.orderbook) == len(self.subscriptions):
+                    self.status=True
 
     def get_market_symbols(self):
         data = self.public_request(method='GET',url='https://api.binance.com/api/v3/exchangeInfo',
@@ -108,7 +112,7 @@ class BinanceApi(ExchangeApi):
         for symbol in valid_symbols:
             normalized_name = normalize_pair(symbol['baseAsset'],symbol['quoteAsset'])
             self.subscriptions[normalized_name] = {'symbol':symbol['symbol'],'baseAsset':symbol['baseAsset'],'quoteAsset':symbol['quoteAsset']}
-            if len(self.subscriptions) == 2:
+            if len(self.subscriptions) == 100:
                 break
 
 
@@ -140,10 +144,13 @@ class KucoinApi(ExchangeApi):
 
         url = 'https://api.kucoin.com/api/v1/bullet-public'
         resp = self.public_request(method="POST",url=url)
+        print(resp)
         self.token = resp['data']['token']
         self.url = resp['data']['instanceServers'][0]['endpoint']
         self.ping_interval = int(resp['data']['instanceServers'][0]['pingInterval'])/1000
+
         self.ping_timeout = int(resp['data']['instanceServers'][0]['pingTimeout'])/1000
+
     def on_open(self,ws):
         topic = f"/spotMarket/level2Depth5:"
         for symbol,value in self.subscriptions.items():
@@ -166,7 +173,8 @@ class KucoinApi(ExchangeApi):
                     unified_symbol = self.find_symbol(data['topic'].split(':')[1])
 
                     self.orderbook[unified_symbol] = {"bids": data['data']['bids'], "asks": data['data']['asks']}
-
+                    if len(self.orderbook) == len(self.subscriptions):
+                        self.status = True
 
     def get_market_symbols(self):
         data = self.public_request(method='GET', url='https://api.kucoin.com/api/v2/symbols')
@@ -178,12 +186,12 @@ class KucoinApi(ExchangeApi):
                 normalized_name = normalize_pair(symbol['baseCurrency'],symbol['quoteCurrency'])
                 self.subscriptions[normalized_name] = {'symbol':symbol['symbol'],'baseAsset': symbol['baseCurrency'],
                                                     'quoteAsset': symbol['quoteCurrency']}
-            if len(self.subscriptions) == 2:
+            if len(self.subscriptions) == 100:
                 break
         # print(self.subscriptions)
 
 if __name__ == "__main__":
-    binance_test = BinanceApi(api_key='asdasd',secret_key='asd')
+    # binance_test = BinanceApi(api_key='asdasd',secret_key='asd')
     # while True:
     #     binance = binance_test.get_orderbook()
     #     time.sleep(0.5)
@@ -194,12 +202,12 @@ if __name__ == "__main__":
     # print(kucoin_test.subscriptions)
     # print(kucoin_test.find_symbol('LOKI-BTC'))
     while True:
-        print('Binance')
-        print(binance_test.subscriptions)
-        print(binance_test.get_orderbook())
+        # print('Binance')
+        # print(binance_test.subscriptions)
+        # print(binance_test.get_orderbook())
         # print('----------------------------')
-        # print('Kucoin')
-        # print(kucoin_test.get_orderbook())
+        print('Kucoin')
+        print(kucoin_test.get_orderbook())
         # print('----------------------------')
 
         time.sleep(2)
