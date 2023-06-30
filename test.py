@@ -3,5 +3,11 @@ class TestExchange:
         self.subscriptions = {}
         self.orderbook = {}
         self.name = name
-        self.status=True
+        self.status=False
         print(f"Initiate {self.name}")
+        self.scan()
+
+    def scan(self):
+        print(f'Scanning {self.name}')
+
+        self.status=True
