@@ -1,14 +1,13 @@
 import time
 
 from Exchanges import BinanceApi, KucoinApi
-from test import TestExchange
 
 """
 There will be Arbitrage scanner part
 
 """
 import itertools
-import asyncio
+
 
 class Scanner:
     def __init__(self, *exchanges):
@@ -29,9 +28,7 @@ class Scanner:
 
     def scan(self):
         for exchange1, exchange2 in itertools.combinations(self.exchanges, 2):
-            condition = asyncio.Condition()
-            async with condition:
-                await condition.wait_for(exchange1.status and exchange2.status):
+            if exchange1.status and exchange2.status:
                 symbols_set = set(exchange1.subscriptions.keys()).intersection(set(exchange2.subscriptions.keys()))
                 for symbol in symbols_set:
                     ex1_prices = exchange1.orderbook[symbol]
@@ -40,12 +37,6 @@ class Scanner:
                     profits = self.calculate_symbol_profit(ex1_prices, ex2_prices)
                     print(f"Profit on {symbol} from {exchange1.name} to {exchange2.name} is {profits[0]}")
                     print(f"Profit on {symbol} from {exchange2.name} to {exchange1.name} is {profits[1]}")
-    async def run_scanner(self):
-        task = self.scan()
-        await asyncio.gather(task)
-
-
-
 
     def calculate_symbol_profit(self, ex1_prices, ex2_prices):
         best_bid_price1 = float(ex1_prices['bids'][0][0])
@@ -56,7 +47,6 @@ class Scanner:
         ex1_to_ex2_profit = (best_bid_price2 - best_ask_price1) / best_ask_price1 * 100
         ex2_to_ex1_profit = (best_bid_price1 - best_ask_price2) / best_ask_price2 * 100
         return ex1_to_ex2_profit, ex2_to_ex1_profit
-
 
 
 if __name__ == "__main__":
