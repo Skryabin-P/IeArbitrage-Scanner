@@ -1,7 +1,7 @@
+import threading
 import time
-
 from Exchanges import BinanceApi, KucoinApi
-
+import os
 """
 There will be Arbitrage scanner part
 
@@ -28,11 +28,26 @@ class Scanner:
 
     def scan(self):
         for exchange1, exchange2 in itertools.combinations(self.exchanges, 2):
-            if exchange1.status and exchange2.status:
+            # print('Next try')
+            # ex1_status = exchange1.get_status()
+            # print(f"status with Lock {ex1_status}")
+            # print(f"status without lock {exchange1.status}")
+            # ex2_status = exchange2.get_status()
+            ex1_status = exchange1.status
+            ex2_status = exchange2.status
+            print(exchange2.name)
+            print(ex2_status)
+            print(len(exchange2.orderbook))
+            # print('Ex1:')
+            # print(len(exchange1.get_orderbook()))
+            # print('--------------------------------')
+            # print('Ex2:')
+            # print(len(exchange2.get_orderbook()))
+            # print('---------------------------------')
+            if ex1_status and ex2_status:
                 symbols_set = set(exchange1.subscriptions.keys()).intersection(set(exchange2.subscriptions.keys()))
                 for symbol in symbols_set:
                     ex1_prices = exchange1.orderbook[symbol]
-
                     ex2_prices = exchange2.orderbook[symbol]
                     profits = self.calculate_symbol_profit(ex1_prices, ex2_prices)
                     print(f"Profit on {symbol} from {exchange1.name} to {exchange2.name} is {profits[0]}")
@@ -47,11 +62,16 @@ class Scanner:
         ex1_to_ex2_profit = (best_bid_price2 - best_ask_price1) / best_ask_price1 * 100
         ex2_to_ex1_profit = (best_bid_price1 - best_ask_price2) / best_ask_price2 * 100
         return ex1_to_ex2_profit, ex2_to_ex1_profit
+    # def run_scanner(self):
+    #     scanner_thread = threading.Thread(target=self.scan)
+    #     scanner_thread.start()
+    #     scanner_thread.join()
 
 
 if __name__ == "__main__":
-    binance = BinanceApi('asdad', 'asd')
+    # binance = BinanceApi('asdad', 'asd')
     kucoin = KucoinApi('asdasd', 'asdad')
+
     # binance2 = BinanceApi('asdad2','asd2')
     # binance = TestExchange(name='Binance')
     # kucoin = TestExchange(name='Kucoin')
@@ -67,8 +87,9 @@ if __name__ == "__main__":
     #                         'eth_btc': {'symbol': 'ETHBTC', 'baseAsset': 'ETH', 'quoteAsset': 'BTC'}}
     #
     # kucoin.orderbook = {'ltc_btc': {'bids': [['0.00289700', '126.00700000'], ['0.00289600', '69.39500000'], ['0.00289500', '290.34900000'], ['0.00289400', '523.68300000'], ['0.00289300', '28.09500000']], 'asks': [['0.00289800', '1.55400000'], ['0.00289900', '40.66600000'], ['0.00290000', '568.71800000'], ['0.00290100', '15.57800000'], ['0.00290200', '38.29700000']]}, 'eth_btc': {'bids': [['0.06149000', '48.55470000'], ['0.06148000', '13.72570000'], ['0.06147000', '16.08990000'], ['0.06146000', '64.71740000'], ['0.06145000', '15.33120000']], 'asks': [['0.06150000', '20.39310000'], ['0.06151000', '21.66670000'], ['0.06152000', '21.73320000'], ['0.06153000', '43.48520000'], ['0.06154000', '12.49130000']]}}
-    scanner = Scanner(binance, kucoin)
-    while True:
-        scanner.scan()
-        time.sleep(1)
-    # print(scanner.get_symbols())
+    # scanner = Scanner(binance, kucoin)
+    # while True:
+    #     scanner.scan()
+    #     # os.system('cls' if os.name == 'nt' else 'clear')
+    #     # time.sleep(1)
+    # # print(scanner.get_symbols())

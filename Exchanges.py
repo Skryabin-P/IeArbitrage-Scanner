@@ -45,11 +45,15 @@ class ExchangeApi:
                                          on_error=self.on_error)
         # self.ws.run_forever()
         thread = threading.Thread(target=self.ws.run_forever, kwargs={'ping_interval': self.ping_interval,'ping_timeout': self.ping_timeout}, daemon=True)
+
         thread.start()
 
     def get_orderbook(self):
         with self.lock:
             return self.orderbook
+    def get_status(self):
+        with self.lock:
+            return self.status
     def get_market_symbols(self):
         pass
     def on_message(self,ws,message):
@@ -150,7 +154,7 @@ class KucoinApi(ExchangeApi):
         self.ping_interval = int(resp['data']['instanceServers'][0]['pingInterval'])/1000
 
         self.ping_timeout = int(resp['data']['instanceServers'][0]['pingTimeout'])/1000
-
+        print(F"{self.name} - ping interval={self.ping_interval}, ping timeout={self.ping_timeout}")
     def on_open(self,ws):
         topic = f"/spotMarket/level2Depth5:"
         for symbol,value in self.subscriptions.items():
@@ -191,7 +195,7 @@ class KucoinApi(ExchangeApi):
         # print(self.subscriptions)
 
 if __name__ == "__main__":
-    # binance_test = BinanceApi(api_key='asdasd',secret_key='asd')
+    binance_test = BinanceApi(api_key='asdasd',secret_key='asd')
     # while True:
     #     binance = binance_test.get_orderbook()
     #     time.sleep(0.5)
@@ -202,12 +206,11 @@ if __name__ == "__main__":
     # print(kucoin_test.subscriptions)
     # print(kucoin_test.find_symbol('LOKI-BTC'))
     while True:
-        # print('Binance')
+        print('Binance')
         # print(binance_test.subscriptions)
-        # print(binance_test.get_orderbook())
-        # print('----------------------------')
+        print(binance_test.orderbook)
+        print('----------------------------')
         print('Kucoin')
-        print(kucoin_test.get_orderbook())
-        # print('----------------------------')
+        print(kucoin_test.orderbook)
+        print('----------------------------')
 
-        time.sleep(2)
