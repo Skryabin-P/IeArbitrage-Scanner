@@ -1,6 +1,7 @@
 import threading
 import time
-from Exchanges import BinanceApi, KucoinApi
+from Client.Binance import BinanceApi
+from Client.Kucoin import KucoinApi
 import os
 """
 There will be Arbitrage scanner part
@@ -69,7 +70,7 @@ class Scanner:
 
 
 if __name__ == "__main__":
-    # binance = BinanceApi('asdad', 'asd')
+    binance = BinanceApi('asdad', 'asd')
     kucoin = KucoinApi('asdasd', 'asdad')
 
     # binance2 = BinanceApi('asdad2','asd2')
@@ -87,9 +88,9 @@ if __name__ == "__main__":
     #                         'eth_btc': {'symbol': 'ETHBTC', 'baseAsset': 'ETH', 'quoteAsset': 'BTC'}}
     #
     # kucoin.orderbook = {'ltc_btc': {'bids': [['0.00289700', '126.00700000'], ['0.00289600', '69.39500000'], ['0.00289500', '290.34900000'], ['0.00289400', '523.68300000'], ['0.00289300', '28.09500000']], 'asks': [['0.00289800', '1.55400000'], ['0.00289900', '40.66600000'], ['0.00290000', '568.71800000'], ['0.00290100', '15.57800000'], ['0.00290200', '38.29700000']]}, 'eth_btc': {'bids': [['0.06149000', '48.55470000'], ['0.06148000', '13.72570000'], ['0.06147000', '16.08990000'], ['0.06146000', '64.71740000'], ['0.06145000', '15.33120000']], 'asks': [['0.06150000', '20.39310000'], ['0.06151000', '21.66670000'], ['0.06152000', '21.73320000'], ['0.06153000', '43.48520000'], ['0.06154000', '12.49130000']]}}
-    # scanner = Scanner(binance, kucoin)
-    # while True:
-    #     scanner.scan()
-    #     # os.system('cls' if os.name == 'nt' else 'clear')
-    #     # time.sleep(1)
+    scanner = Scanner(binance, kucoin)
+    while True:
+        scanner.scan()
+        # os.system('cls' if os.name == 'nt' else 'clear')
+        # time.sleep(1)
     # # print(scanner.get_symbols())
